@@ -1,4 +1,4 @@
-#FairLens detects hidden bias in ML models before deployment. It uses fairness scoring, explainability, and one-click remediation insights through a powerful dashboard designed for immediate impact.
+fairLens detects hidden bias in ML models before deployment. It uses fairness scoring, explainability, and one-click remediation insights through a powerful dashboard designed for immediate impact.
 
 # ⚖️ FairLens AI
 ### *Detect bias. Enforce fairness. Build trust.*
