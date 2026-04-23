@@ -1,0 +1,55 @@
+# -------------------
+# Python
+# -------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.venv/
+venv/
+env/
+
+# -------------------
+# Environment Secrets
+# -------------------
+.env
+.env.local
+backend/.env
+frontend/.env
+
+# -------------------
+# Node / Frontend
+# -------------------
+node_modules/
+.next/
+dist/
+build/
+
+# -------------------
+# Logs
+# -------------------
+*.log
+
+# -------------------
+# VS Code
+# -------------------
+.vscode/
+
+# -------------------
+# OS Files
+# -------------------
+.DS_Store
+Thumbs.db
+
+# -------------------
+# Coverage / Testing
+# -------------------
+.coverage
+pytest_cache/
+htmlcov/
+
+# -------------------
+# Misc
+# -------------------
+.idea/

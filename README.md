@@ -1,14 +1,30 @@
-fairLens detects hidden bias in ML models before deployment. It uses fairness scoring, explainability, and one-click remediation insights through a powerful dashboard designed for immediate impact.
+# FairLens - Detect Hidden Bias Before It Hurts Real People
 
-# ⚖️ FairLens AI
+## Overview
+FairLens helps organizations detect and reduce hidden bias in machine learning models before deployment. It combines fairness metrics, explainability tools, and actionable remediation insights through an intuitive dashboard built for real-world impact.
+
 ### *Detect bias. Enforce fairness. Build trust.*
 
-> **FairLens AI** is an end-to-end bias detection and mitigation platform for high-stakes ML systems — purpose-built for hiring, lending, and healthcare decisions where a flawed model doesn't just fail metrics, it fails people.
+Most tools only tell you a model is biased.
+
+**FairLens shows who is harmed, why it happens, and how to fix it.**
+
+> **FairLens** is an end-to-end bias detection and mitigation platform for high-stakes ML systems — purpose-built for hiring, lending, and healthcare decisions where a flawed model doesn't just fail metrics, it fails people.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+
+---
+
+## Built MVP Features
+
+- CSV / Dataset Upload
+- Fairness Metrics Dashboard
+- SHAP Explainability Insights
+- Bias Mitigation Recommendations
+- Exportable Audit Reports
 
 ---
 
@@ -26,13 +42,13 @@ Current tools are either:
 - Too shallow (just demographic parity checks) — miss intersectional and proxy bias
 - Too passive — detect but never fix
 
-**FairLens AI closes the gap: from raw dataset to actionable debiasing recommendations, in one unified platform.**
+**FairLens closes the gap: from raw dataset to actionable debiasing recommendations, in one unified platform.**
 
 ---
 
 ## 💡 Solution Overview
 
-FairLens AI is a **full-stack fairness auditing system** that plugs into your existing ML pipeline and outputs:
+FairLens is a **full-stack fairness auditing system** that plugs into your existing ML pipeline and outputs:
 
 - **Quantified bias scores** across 6 fairness metrics
 - **Root cause attribution** (which features/slices drive bias)
@@ -340,8 +356,8 @@ Dataset Audit                  Model Prediction Audit
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/fairlens-ai.git
-cd fairlens-ai
+git clone https://github.com/subhankar235/biasness-hack2skill.git
+cd biasness-hack2skill
 
 # 2. Set environment variables
 cp .env.example .env
@@ -397,8 +413,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**FairLens AI** — Because the cost of biased AI isn't a metric. It's a person.
+**FairLens** — Because the cost of biased AI isn't a metric. It's a person.
 
-*Built at [Hackathon Name] · [Date]*
+*Built at Hack2Skill 2026*
 
 </div>
