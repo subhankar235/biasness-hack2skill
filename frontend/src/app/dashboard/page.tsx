@@ -9,10 +9,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { FileDown, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
   const [upload, setUpload] = useState<any>(null);
   const [scan, setScan] = useState<any>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     const u = localStorage.getItem("fairlens_upload");
@@ -68,6 +70,30 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function downloadPDF() {
+    try {
+      setPdfLoading(true);
+
+      const res = await fetch(
+        "http://127.0.0.1:8000/api/v1/report/pdf"
+      );
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fairlens-audit-report.pdf";
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("PDF generation failed");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -83,7 +109,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* NEW: AI Insight + Export */}
+        {/* AI Insight + Export */}
         {upload && scan && (
           <div className="grid md:grid-cols-2 gap-6 mb-8">
 
@@ -95,7 +121,7 @@ export default function DashboardPage() {
               <p className="text-slate-300 leading-7">
                 Significant disparity detected between demographic groups.
                 Female approval outcomes are lower than male outcomes.
-                Recommended next step: review historical labels, thresholds,
+                Recommended next step: review labels, thresholds,
                 and feature weighting before deployment.
               </p>
             </section>
@@ -106,20 +132,36 @@ export default function DashboardPage() {
               </h2>
 
               <div className="flex gap-3 flex-wrap">
+
                 <button
                   onClick={downloadJSON}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 text-black font-semibold hover:bg-cyan-400 transition"
+                  className="px-5 py-3 rounded-xl bg-cyan-500 text-black font-semibold hover:bg-cyan-400 transition"
                 >
                   Download JSON
                 </button>
 
-                <button className="px-5 py-2 rounded-xl border border-slate-700 text-slate-300">
-                  PDF Soon
+                <button
+                  onClick={downloadPDF}
+                  disabled={pdfLoading}
+                  className="px-5 py-3 rounded-xl bg-white text-black font-semibold hover:bg-slate-200 transition flex items-center gap-2 disabled:opacity-70"
+                >
+                  {pdfLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="w-4 h-4" />
+                      Generate Live PDF
+                    </>
+                  )}
                 </button>
+
               </div>
 
               <p className="text-slate-400 text-sm mt-4">
-                Save fairness findings for audit and compliance workflows.
+                Export investor-grade fairness reports instantly.
               </p>
             </section>
 
@@ -140,7 +182,7 @@ export default function DashboardPage() {
 
         {upload && (
           <>
-            {/* Top Metrics */}
+            {/* Metrics */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <Card title="Rows Scanned" value={upload.rows} />
               <Card title="Columns" value={upload.num_columns} />
@@ -151,7 +193,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Charts + Risk */}
+            {/* Charts */}
             {scan && (
               <div className="grid md:grid-cols-2 gap-6 mb-8">
 
@@ -212,7 +254,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Bottom Panels */}
+            {/* Bottom */}
             {scan && (
               <div className="grid md:grid-cols-2 gap-6">
 
@@ -223,22 +265,22 @@ export default function DashboardPage() {
 
                   <div className="space-y-3 text-slate-300">
                     <p>
-                      Male Approval Rate:{" "}
-                      <span className="text-cyan-400 font-semibold">
+                      Male Approval Rate:
+                      <span className="text-cyan-400 font-semibold ml-2">
                         {scan.approval_rates?.Male}
                       </span>
                     </p>
 
                     <p>
-                      Female Approval Rate:{" "}
-                      <span className="text-cyan-400 font-semibold">
+                      Female Approval Rate:
+                      <span className="text-cyan-400 font-semibold ml-2">
                         {scan.approval_rates?.Female}
                       </span>
                     </p>
 
                     <p>
-                      Parity Difference:{" "}
-                      <span className="text-yellow-400 font-semibold">
+                      Parity Difference:
+                      <span className="text-yellow-400 font-semibold ml-2">
                         {scan.demographic_parity_diff}
                       </span>
                     </p>
