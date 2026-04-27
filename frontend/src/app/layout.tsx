@@ -1,4 +1,10 @@
 import "./globals.css";
+import Navbar from "../components/Navbar";
+
+export const metadata = {
+  title: "FairLens",
+  description: "AI Fairness Platform",
+};
 
 export default function RootLayout({
   children,
@@ -7,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-slate-950 text-white">
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }
