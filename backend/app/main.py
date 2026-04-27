@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import datasets, bias, reports
+from app.api import datasets, bias, reports, models
 
 app = FastAPI(
     title="FairLens API",
@@ -33,6 +33,12 @@ app.include_router(
     reports.router, 
     prefix="/api/v1/report", 
     tags=["Report"]
+)
+
+app.include_router(
+    models.router,
+    prefix="/api/v1/models",
+    tags=["Models"]
 )
 
 @app.get("/health")

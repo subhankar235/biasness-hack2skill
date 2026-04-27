@@ -1,73 +1,118 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 export default function HomePage() {
-  const stats = [
-    { label: "Datasets Audited", value: "12K+" },
-    { label: "Bias Flags Raised", value: "3.4K+" },
-    { label: "Avg Scan Time", value: "4 sec" },
-  ];
-
   return (
-    <main className="min-h-screen bg-slate-950 text-white overflow-hidden">
-      <section className="max-w-7xl mx-auto px-6 py-24">
+    <main className="min-h-screen bg-black text-white relative overflow-hidden">
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center"
-        >
-          <p className="text-cyan-400 font-semibold uppercase tracking-widest mb-4">
-            Trust Layer For AI Decisions
+      {/* Futuristic Background */}
+      <div className="absolute inset-0 overflow-hidden">
+
+        {/* Glow center */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[900px] h-[300px] bg-cyan-500/10 blur-3xl rounded-full" />
+
+        {/* Top arc */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1400px] h-[500px] border-t border-cyan-400/20 rounded-full" />
+
+        {/* Bottom arc */}
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-[1000px] h-[380px] border-t border-cyan-500/20 rounded-full" />
+
+        {/* Radial glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.08),transparent_55%)]" />
+
+        {/* Grid fade */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      </div>
+
+      {/* Hero */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-12 items-center">
+
+        {/* Left Side */}
+        <div>
+          <p className="text-cyan-400 font-semibold tracking-[0.25em] mb-5 text-sm">
+            FAIR AI INFRASTRUCTURE
           </p>
 
           <h1 className="text-6xl md:text-7xl font-bold leading-tight">
-            Detect Hidden Bias
-            <span className="text-cyan-400"> Before Deployment</span>
+            Detect Hidden
+            <span className="text-cyan-400"> Bias </span>
+            In Seconds
           </h1>
 
-          <p className="text-slate-300 mt-6 max-w-3xl mx-auto text-lg leading-8">
-            FairLens audits datasets and ML decisions for unfair outcomes,
-            sensitive attribute risks, and demographic disparity in seconds.
+          <p className="text-slate-400 text-lg mt-6 leading-8 max-w-xl">
+            Upload datasets, detect sensitive columns, monitor fairness,
+            run explainability analysis, and export audit-ready reports instantly.
           </p>
 
-          <div className="mt-10 flex justify-center gap-4 flex-wrap">
+          <div className="flex gap-4 mt-10 flex-wrap">
             <Link
               href="/upload"
-              className="px-7 py-3 rounded-xl bg-cyan-500 text-black font-semibold hover:bg-cyan-400 transition"
+              className="px-6 py-3 rounded-xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition"
             >
-              Start Free Scan
+              Start Scan
             </Link>
 
             <Link
               href="/dashboard"
-              className="px-7 py-3 rounded-xl border border-slate-700 hover:border-cyan-400 transition"
+              className="px-6 py-3 rounded-xl border border-slate-700 hover:bg-slate-900 transition"
             >
               Live Dashboard
             </Link>
           </div>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6 mt-20">
-          {stats.map((item, i) => (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center"
-            >
-              <h3 className="text-4xl font-bold text-cyan-400">
-                {item.value}
-              </h3>
-              <p className="text-slate-400 mt-2">{item.label}</p>
-            </motion.div>
-          ))}
         </div>
+
+        {/* Right Card */}
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+
+          <div className="space-y-6">
+
+            <Metric label="Rows Scanned" value="1.2M" />
+            <Metric label="Sensitive Fields" value="3 Found" />
+            <Metric label="Bias Risk" value="High" danger />
+
+            <div>
+              <p className="text-slate-400 mb-2">
+                Demographic Parity Difference
+              </p>
+
+              <div className="w-full h-4 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full w-3/4 bg-orange-500 rounded-full" />
+              </div>
+
+              <p className="text-cyan-400 text-4xl font-bold mt-4">
+                0.75
+              </p>
+            </div>
+
+          </div>
+        </div>
+
       </section>
     </main>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-slate-400">{label}</span>
+
+      <span
+        className={`font-semibold ${
+          danger ? "text-orange-400" : "text-white"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
