@@ -26,6 +26,6 @@ export const runRemediation = async (params: RemediationParams) => {
     payload.sampling_strategy = "auto";
   }
   
-  const result = await fetchApi.post(`/api/v1/remediation/${strategy}`, payload);
+  const result = await fetchApi.post(`/api/v1/remediation/${strategy === "reweight" ? "reweigh" : strategy}`, payload);
   return result;
 };

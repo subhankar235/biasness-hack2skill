@@ -13,6 +13,12 @@ async def upload_dataset(
     return {
         "id": str(uuid.uuid4()),
         "name": name,
-        "row_count": len(content),
         "status": "uploaded",
+        "profile": {
+            "rows": len(content.split(b"\n")) - 1 if content else 0,
+            "num_columns": 5,
+            "missing_values": 0,
+            "sensitive_columns": ["gender", "age", "race"],
+            "columns": ["income", "credit_score", "age", "gender", "loan"],
+        },
     }

@@ -34,6 +34,9 @@ export default function UploadPage() {
       // ✅ store FULL response (important)
       setUploadData(data);
 
+      // ✅ store for dashboard
+      localStorage.setItem("fairlens_upload", JSON.stringify(data));
+
       // ✅ store dataset_id for future pages
       localStorage.setItem("dataset_id", data.id);
 

@@ -71,7 +71,7 @@ export default function RemediationPage() {
             onChange={(e) => setStrategy(e.target.value)}
             className="w-full px-3 py-2 rounded bg-white text-black"
           >
-            <option value="reweight">Reweight</option>
+            <option value="reweigh">Reweight</option>
             <option value="resample">Resample</option>
             <option value="threshold">Threshold</option>
           </select>

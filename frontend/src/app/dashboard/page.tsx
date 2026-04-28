@@ -184,12 +184,12 @@ export default function DashboardPage() {
           <>
             {/* Metrics */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
-              <Card title="Rows Scanned" value={upload.rows} />
-              <Card title="Columns" value={upload.num_columns} />
-              <Card title="Missing Values" value={upload.missing_values} />
+              <Card title="Rows Scanned" value={upload.profile?.rows || upload.rows} />
+              <Card title="Columns" value={upload.profile?.num_columns || upload.num_columns} />
+              <Card title="Missing Values" value={upload.profile?.missing_values || upload.missing_values} />
               <Card
                 title="Sensitive Fields"
-                value={upload.sensitive_columns.length}
+                value={upload.profile?.sensitive_columns?.length || upload.sensitive_columns?.length}
               />
             </div>
 
@@ -293,7 +293,7 @@ export default function DashboardPage() {
                   </h2>
 
                   <div className="flex flex-wrap gap-3">
-                    {upload.sensitive_columns.map(
+                    {(upload.profile?.sensitive_columns || upload.sensitive_columns || []).map(
                       (item: string) => (
                         <span
                           key={item}

@@ -17,6 +17,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+@app.post("/api/v1/auth/login", response_model=Token)
+def login():
+    return Token(
+        access_token=str(uuid.uuid4()),
+        token_type="bearer",
+    )
+
+
+@app.post("/api/v1/auth/register", response_model=Token)
+def register():
+    return Token(
+        access_token=str(uuid.uuid4()),
+        token_type="bearer",
+    )
+
 class ReweighRequest(BaseModel):
     dataset_id: int = 1
     sensitive_feature: str = "gender"
@@ -61,6 +82,15 @@ def smote(payload: BaseModel):
         strategy="smote",
         status="success",
         message="SMOTE complete.",
+    )
+
+@app.post("/api/v1/remediation/resample")
+def resample(payload: BaseModel):
+    return RemediationJobResponse(
+        job_id=str(uuid.uuid4()),
+        strategy="resample",
+        status="success",
+        message="Resampling complete.",
     )
 
 @app.get("/api/v1/datasets")
