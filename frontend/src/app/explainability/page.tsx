@@ -16,6 +16,8 @@ export default function ExplainabilityPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  const biasFlags = data?.bias_flags || [];
+
   async function runExplainability() {
     const input = document.getElementById(
       "fileInput"
@@ -104,7 +106,7 @@ export default function ExplainabilityPage() {
                 </h2>
 
                 <div className="space-y-4">
-                  {data.bias_flags.map(
+                  {biasFlags.length > 0 ? biasFlags.map(
                     (item: string, i: number) => (
                       <div
                         key={i}
@@ -113,7 +115,7 @@ export default function ExplainabilityPage() {
                         {item}
                       </div>
                     )
-                  )}
+                  ) : <p className="text-slate-400">No bias flags detected</p>}
                 </div>
               </section>
 

@@ -134,5 +134,5 @@ def generate_counterfactuals(
         "original_proba": original_proba.tolist()
         if original_proba is not None
         else None,
-        "counterfactuals": results[:max_results],
+        "counterfactzuals": results[:max_results],
     }

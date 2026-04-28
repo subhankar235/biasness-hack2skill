@@ -4,7 +4,7 @@ import { useState } from "react";
 import { runRemediation } from "@/api/remediation";
 
 export default function RemediationPage() {
-  const [datasetIdInput, setDatasetIdInput] = useState("");
+  const [datasetIdInput, setDatasetIdInput] = useState("demo");
   const [strategy, setStrategy] = useState("reweight");
   const [sensitive, setSensitive] = useState("gender");
   const [target, setTarget] = useState("loan");
@@ -12,29 +12,23 @@ export default function RemediationPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleRun() {
-    const dataset_id =
-      datasetIdInput || localStorage.getItem("dataset_id");
-
-    if (!dataset_id) {
-      alert("⚠️ No dataset_id found. Upload dataset or enter ID.");
-      return;
-    }
+    const dataset_id = datasetIdInput || "demo";
 
     setLoading(true);
     setResult(null);
 
     try {
       const res = await runRemediation({
-        dataset_id: parseInt(dataset_id) || 1,
+        dataset_id,
         strategy,
         sensitive_column: sensitive,
         target_column: target,
       });
 
       setResult(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("❌ Remediation failed");
+      alert(`❌ Remediation failed: ${err.message}`);
     }
 
     setLoading(false);
@@ -47,6 +41,10 @@ export default function RemediationPage() {
         <h1 className="text-4xl font-bold mb-6">
           Bias Remediation
         </h1>
+
+        <p className="text-sm text-slate-400 mb-4">
+          Use "demo" for mock data, or upload a CSV and use the dataset ID. Target must be binary (0/1).
+        </p>
 
         {/* Dataset ID */}
         <div className="mb-4">

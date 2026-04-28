@@ -1,31 +1,28 @@
 import { fetchApi } from "./fetchApi";
 
 export interface RemediationParams {
+  dataset_id: string;
   strategy: string;
   sensitive_column: string;
   target_column: string;
-  dataset_id?: number;
-  model_id?: number;
 }
 
 export const runRemediation = async (params: RemediationParams) => {
-  const strategy = params.strategy;
   const payload = {
-    dataset_id: params.dataset_id || 1,
+    dataset_id: params.dataset_id || "demo",
     sensitive_feature: params.sensitive_column,
     label_col: params.target_column,
-    privileged_group: { [params.sensitive_column]: "privileged" },
   };
   
-  if (strategy === "threshold") {
-    payload.model_id = params.model_id || 1;
-    payload.constraint = "demographic_parity";
-  }
+  const strategyMap: Record<string, string> = {
+    reweight: "reweigh",
+    reweigh: "reweigh",
+    resample: "resample",
+    smote: "resample",
+    threshold: "threshold",
+  };
   
-  if (strategy === "smote") {
-    payload.sampling_strategy = "auto";
-  }
-  
-  const result = await fetchApi.post(`/api/v1/remediation/${strategy === "reweight" ? "reweigh" : strategy}`, payload);
+  const endpoint = strategyMap[params.strategy] || "reweigh";
+  const result = await fetchApi.post(`/api/v1/remediation/${endpoint}`, payload);
   return result;
 };

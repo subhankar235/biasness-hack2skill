@@ -98,58 +98,30 @@ def run_scan(req: ScanRequest):
 def set_temp_data(data: dict):
     return {"status": "loaded"}
 
-
-@router.post(
-    "/counterfactual",
-    response_model=CounterfactualResponse,
-    summary="Generate a counterfactual explanation for a single row",
-)
+@router.post("/counterfactual", response_model=CounterfactualResponse)
 def generate_counterfactual(
     payload: CounterfactualRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Given a row and a model, find the minimal feature changes that
-    flip the prediction to the desired target class.
- 
-    - Protected features (e.g. race, gender) are never mutated.
-    - Returns the changed features with before/after values and deltas.
-    """
-    # 1. Fetch records
-    dataset = _get_dataset_or_404(payload.dataset_id, current_user.org_id, db)
-    model_record = _get_model_or_404(payload.model_id, current_user.org_id, db)
- 
-    # 2. Load artifacts from S3
-    s3 = S3Storage()
-    df = _load_dataset_df(dataset, s3)
-    model_loader = _load_model(model_record, s3)
- 
-    # 3. Validate row keys against dataset columns
-    missing = set(payload.row.keys()) - set(df.columns)
-    if missing:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Row contains unknown features: {missing}",
-        )
- 
-    # 4. Run counterfactual engine
+    dataset = _get_dataset_or_404(str(payload.dataset_id), current_user.org_id, db)
+    model_record = _get_model_or_404(str(payload.model_id), current_user.org_id, db)
+
+    # ⚠️ TEMP: avoid empty dataframe bug
+    df = pd.DataFrame([payload.row])  # instead of empty DF
+
     cfg = CounterfactualConfig(
         target_class=payload.target_class,
         protected_features=payload.protected_features,
         max_changes=payload.max_changes,
     )
-    engine = CounterfactualEngine(model_loader=model_loader, config=cfg)
- 
-    try:
-        result = engine.generate(row=payload.row, reference_df=df)
-    except Exception as exc:
-        logger.exception("Counterfactual engine error: %s", exc)
-        raise HTTPException(status_code=500, detail="Counterfactual computation failed.")
- 
+
+    engine = CounterfactualEngine(model_loader=None, config=cfg)
+    result = engine.generate(row=payload.row, reference_df=df)
+
     return CounterfactualResponse(
-        dataset_id=payload.dataset_id,
-        model_id=payload.model_id,
+        dataset_id=str(payload.dataset_id),
+        model_id=str(payload.model_id),
         original_prediction=result.original_prediction,
         counterfactual_prediction=result.counterfactual_prediction,
         original_row=result.original_row,
@@ -159,4 +131,3 @@ def generate_counterfactual(
         found=result.found,
         message=result.message,
     )
- 

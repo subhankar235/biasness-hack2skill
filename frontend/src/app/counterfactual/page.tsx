@@ -312,10 +312,7 @@ export default function CounterfactualPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0c10] text-slate-100 font-['DM_Sans',sans-serif]">
-      {/* Google Font import */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');`}</style>
-
+    <div className="min-h-screen bg-[#0a0c10] text-slate-100 font-sans">
       {/* Top bar */}
       <header className="border-b border-slate-800/60 px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">

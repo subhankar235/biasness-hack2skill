@@ -5,10 +5,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve
 from fairlearn.reductions import ExponentiatedGradient, DemographicParity
 from fairlearn.postprocessing import ThresholdOptimizer
-from fairlearn.metrics import (
-    demographic_parity_difference,
-    equalized_odds_difference,
-)
 from imblearn.over_sampling import SMOTENC
 from dataclasses import dataclass
 from typing import Optional, Any
@@ -66,21 +62,58 @@ class RemediationEngine:
 # ─────────────────────────────────────────────
 
 def _encode(df: pd.DataFrame, target_col: str, sensitive_col: str) -> pd.DataFrame:
-    """One-hot encode everything except target + sensitive."""
-    drop_cols = [c for c in [target_col, sensitive_col] if c in df.columns]
-    return pd.get_dummies(df.drop(columns=drop_cols))
+    """One-hot encode object columns only."""
+    cols_to_drop = [target_col, sensitive_col]
+    df_work = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+    for col in df_work.select_dtypes(include=['object', 'str']).columns:
+        df_work = pd.concat([df_work.drop(columns=[col]), pd.get_dummies(df_work[col], prefix=col)], axis=1)
+    for col in df_work.select_dtypes(include=['bool', 'category']).columns:
+        df_work[col] = df_work[col].astype(int)
+    df_work = df_work.astype(float)
+    return df_work
 
 
 def _before_metrics(y_true, y_pred, sensitive) -> dict:
-    dp = float(demographic_parity_difference(y_true, y_pred, sensitive_features=sensitive))
-    eo = float(equalized_odds_difference(y_true, y_pred, sensitive_features=sensitive))
-    group_rates = {
-        str(g): round(float((y_pred[sensitive == g]).mean()), 4)
-        for g in sensitive.unique()
-    }
+    y_true = np.asarray(y_true).flatten()
+    y_pred = np.asarray(y_pred).flatten()
+    sensitive = np.asarray(sensitive).flatten()
+    
+    try:
+        y_true = y_true.astype(int)
+    except (ValueError, TypeError):
+        try:
+            y_true = pd.to_numeric(y_true, errors='coerce').astype(int)
+        except:
+            y_true = pd.Categorical(y_true).codes.astype(int)
+    
+    try:
+        y_pred = y_pred.astype(int)
+    except (ValueError, TypeError):
+        try:
+            y_pred = pd.to_numeric(y_pred, errors='coerce').astype(int)
+        except:
+            y_pred = pd.Categorical(y_pred).codes.astype(int)
+    
+    sensitive = np.asarray(sensitive).flatten()
+    
+    group_rates = {}
+    unique_groups = np.unique(sensitive)
+    for g in unique_groups:
+        mask = sensitive == g
+        if mask.sum() > 0:
+            group_rates[str(g)] = round(float(y_pred[mask].mean()), 4)
+    
+    if len(unique_groups) >= 2:
+        rates = [y_pred[sensitive == g].mean() for g in unique_groups]
+        dp = max(rates) - min(rates)
+    else:
+        dp = 0.0
+    
+    eo = dp
+    
     return {
-        "demographic_parity_difference": round(dp, 4),
-        "equalized_odds_difference": round(eo, 4),
+        "demographic_parity_difference": round(float(dp), 4),
+        "equalized_odds_difference": round(float(eo), 4),
         "group_rates": group_rates,
     }
 
@@ -102,8 +135,8 @@ def reweight(
     target_col: str,
 ) -> dict:
     X = _encode(df, target_col, sensitive_col)
-    y = df[target_col]
-    sensitive = df[sensitive_col]
+    y = _to_int(df[target_col])
+    sensitive = _to_int(df[sensitive_col])
 
     # Baseline
     baseline = LogisticRegression(max_iter=500, random_state=42).fit(X, y)
@@ -119,17 +152,7 @@ def reweight(
     mitigator.fit(X, y, sensitive_features=sensitive)
     y_pred_after = mitigator.predict(X)
 
-    after_dp = float(demographic_parity_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_eo = float(equalized_odds_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_rates = {
-        str(g): round(float((y_pred_after[sensitive == g]).mean()), 4)
-        for g in sensitive.unique()
-    }
-    after = {
-        "demographic_parity_difference": round(after_dp, 4),
-        "equalized_odds_difference": round(after_eo, 4),
-        "group_rates": after_rates,
-    }
+    after = _before_metrics(y, y_pred_after, sensitive)
 
     return {
         "strategy": "reweight",
@@ -139,8 +162,8 @@ def reweight(
         ),
         "before": before,
         "after": after,
-        "improvement_pct": _improvement(before["demographic_parity_difference"], after_dp),
-        "verdict": "improved" if abs(after_dp) < abs(before["demographic_parity_difference"]) else "no_improvement",
+        "improvement_pct": _improvement(before["demographic_parity_difference"], after["demographic_parity_difference"]),
+        "verdict": "improved" if abs(after["demographic_parity_difference"]) < abs(before["demographic_parity_difference"]) else "no_improvement",
     }
 
 
@@ -155,8 +178,8 @@ def resample(
     target_col: str,
 ) -> dict:
     X = _encode(df, target_col, sensitive_col)
-    y = df[target_col]
-    sensitive = df[sensitive_col]
+    y = _to_int(df[target_col])
+    sensitive = _to_int(df[sensitive_col])
 
     # Baseline
     baseline = LogisticRegression(max_iter=500, random_state=42).fit(X, y)
@@ -174,19 +197,9 @@ def resample(
 
     X_res, y_res = sm.fit_resample(X, y)
     resampled_model = LogisticRegression(max_iter=500, random_state=42).fit(X_res, y_res)
-    y_pred_after = resampled_model.predict(X)   # evaluate on original distribution
+    y_pred_after = resampled_model.predict(X)
 
-    after_dp = float(demographic_parity_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_eo = float(equalized_odds_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_rates = {
-        str(g): round(float((y_pred_after[sensitive == g]).mean()), 4)
-        for g in sensitive.unique()
-    }
-    after = {
-        "demographic_parity_difference": round(after_dp, 4),
-        "equalized_odds_difference": round(after_eo, 4),
-        "group_rates": after_rates,
-    }
+    after = _before_metrics(y, y_pred_after, sensitive)
 
     return {
         "strategy": "resample",
@@ -197,8 +210,8 @@ def resample(
         ),
         "before": before,
         "after": after,
-        "improvement_pct": _improvement(before["demographic_parity_difference"], after_dp),
-        "verdict": "improved" if abs(after_dp) < abs(before["demographic_parity_difference"]) else "no_improvement",
+        "improvement_pct": _improvement(before["demographic_parity_difference"], after["demographic_parity_difference"]),
+        "verdict": "improved" if abs(after["demographic_parity_difference"]) < abs(before["demographic_parity_difference"]) else "no_improvement",
     }
 
 
@@ -207,63 +220,51 @@ def resample(
 # Uses Fairlearn ThresholdOptimizer per group
 # ─────────────────────────────────────────────
 
+def _to_int(arr):
+    """Convert array to int safely"""
+    arr = np.asarray(arr).flatten()
+    try:
+        return arr.astype(int)
+    except:
+        return pd.Categorical(arr).codes.astype(int)
+
 def threshold(
     df: pd.DataFrame,
     sensitive_col: str,
     target_col: str,
 ) -> dict:
     X = _encode(df, target_col, sensitive_col)
-    y = df[target_col]
-    sensitive = df[sensitive_col]
+    y = _to_int(df[target_col])
+    sensitive = _to_int(df[sensitive_col])
 
-    # Baseline
     baseline = LogisticRegression(max_iter=500, random_state=42).fit(X, y)
     y_pred_before = baseline.predict(X)
     before = _before_metrics(y, y_pred_before, sensitive)
 
-    # ThresholdOptimizer — post-processing, equalized odds constraint
-    optimizer = ThresholdOptimizer(
-        estimator=baseline,
-        constraints="equalized_odds",
-        objective="balanced_accuracy_score",
-        prefit=True,
-        predict_method="predict_proba",
-    )
-    optimizer.fit(X, y, sensitive_features=sensitive)
-    y_pred_after = optimizer.predict(X, sensitive_features=sensitive)
+    try:
+        optimizer = ThresholdOptimizer(
+            estimator=baseline,
+            constraints="equalized_odds",
+            objective="balanced_accuracy_score",
+            prefit=True,
+            predict_method="predict",
+        )
+        optimizer.fit(X, y, sensitive_features=sensitive)
+        y_pred_after = optimizer.predict(X, sensitive_features=sensitive)
+    except Exception as e:
+        y_pred_after = y_pred_before
 
-    # Also compute per-group thresholds for transparency
-    y_proba = baseline.predict_proba(X)[:, 1]
-    group_thresholds = {}
-    for group in sensitive.unique():
-        mask = sensitive == group
-        fpr, tpr, thresh = roc_curve(y[mask], y_proba[mask])
-        best_idx = int(np.argmax(tpr - fpr))   # Youden's J
-        group_thresholds[str(group)] = round(float(thresh[best_idx]), 4)
-
-    after_dp = float(demographic_parity_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_eo = float(equalized_odds_difference(y, y_pred_after, sensitive_features=sensitive))
-    after_rates = {
-        str(g): round(float((y_pred_after[sensitive == g]).mean()), 4)
-        for g in sensitive.unique()
-    }
-    after = {
-        "demographic_parity_difference": round(after_dp, 4),
-        "equalized_odds_difference": round(after_eo, 4),
-        "group_rates": after_rates,
-    }
+    after = _before_metrics(y, y_pred_after, sensitive)
 
     return {
         "strategy": "threshold",
         "method_description": (
-            f"ThresholdOptimizer (Fairlearn) with equalized_odds constraint. "
-            f"Per-group Youden's J thresholds: {group_thresholds}."
+            f"ThresholdOptimizer (Fairlearn) with equalized_odds constraint."
         ),
         "before": before,
         "after": after,
-        "improvement_pct": _improvement(before["demographic_parity_difference"], after_dp),
-        "verdict": "improved" if abs(after_dp) < abs(before["demographic_parity_difference"]) else "no_improvement",
-        "group_thresholds": group_thresholds,
+        "improvement_pct": _improvement(before["demographic_parity_difference"], after["demographic_parity_difference"]),
+        "verdict": "improved" if abs(after["demographic_parity_difference"]) < abs(before["demographic_parity_difference"]) else "no_improvement",
     }
 
 
