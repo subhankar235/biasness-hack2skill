@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from app.tasks.celery_app import celery
+from app.tasks.celery_app import celery_app
 from app.core.remediation import run_remediation
 from app.storage.s3 import download_parquet
 
@@ -60,7 +60,58 @@ def _download_sync(s3_key: str):
 # Celery Task
 # ─────────────────────────────────────────────
 
-@celery.task(
+@celery_app.task(
+    bind=True,
+    name="app.tasks.remediation_tasks.run_reweigh_task",
+    max_retries=2,
+    default_retry_delay=10,
+    acks_late=True,
+)
+def run_reweigh_task(
+    self,
+    remediation_id: str,
+    s3_key: str,
+    sensitive_col: str,
+    target_col: str,
+) -> dict:
+    return run_remediation_task(remediation_id, s3_key, sensitive_col, target_col, "reweight").result()
+
+
+@celery_app.task(
+    bind=True,
+    name="app.tasks.remediation_tasks.run_threshold_task",
+    max_retries=2,
+    default_retry_delay=10,
+    acks_late=True,
+)
+def run_threshold_task(
+    self,
+    remediation_id: str,
+    s3_key: str,
+    sensitive_col: str,
+    target_col: str,
+) -> dict:
+    return run_remediation_task(remediation_id, s3_key, sensitive_col, target_col, "threshold").result()
+
+
+@celery_app.task(
+    bind=True,
+    name="app.tasks.remediation_tasks.run_smote_task",
+    max_retries=2,
+    default_retry_delay=10,
+    acks_late=True,
+)
+def run_smote_task(
+    self,
+    remediation_id: str,
+    s3_key: str,
+    sensitive_col: str,
+    target_col: str,
+) -> dict:
+    return run_remediation_task(remediation_id, s3_key, sensitive_col, target_col, "smote").result()
+
+
+@celery_app.task(
     bind=True,
     name="app.tasks.remediation_tasks.run_remediation_task",
     max_retries=2,

@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@tanstack/react-query": "^5.100.5",
+    "axios": "^1.15.2",
     "lucide-react": "^1.11.0"
   }
 }

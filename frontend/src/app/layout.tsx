@@ -1,5 +1,6 @@
 import "./globals.css";
 import Navbar from "../components/Navbar";
+import { Providers } from "../hooks/lib/providers";
 
 export const metadata = {
   title: "FairLens",
@@ -14,8 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-slate-950 text-white">
-        <Navbar />
-        {children}
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

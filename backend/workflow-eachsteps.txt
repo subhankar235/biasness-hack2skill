@@ -1,0 +1,34 @@
+User uploads model file
+        │
+        ▼
+app/api/models.py          → POST /models/upload
+app/storage/s3.py          → saves .joblib/.onnx to MinIO/S3
+app/db/models.py           → stores model_id + S3 path in DB
+        │
+        ▼
+User submits a row for explanation
+        │
+        ▼
+app/api/bias_counterfactual.py   → POST /bias/counterfactual
+        │  receives: model_id, row, feature_ranges, sensitive_features
+        │
+        ├──► app/core/model_loader.py   → fetches file from S3, loads joblib/ONNX
+        │
+        └──► app/core/counterfactual.py → brute-force flips features,
+                                          calls model.predict() per combo,
+                                          returns flipped results
+        │
+        ▼
+frontend/CounterfactualExplorer.jsx   → shows change pills + prediction cards
+
+
+1. You upload dataset
+2. Model makes predictions
+3. You detect bias
+4. You apply remediation (change data or logic)
+5. ❗ Run model AGAIN
+6. Compare results (before vs after)
+
+
+
+

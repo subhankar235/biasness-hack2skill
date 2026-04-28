@@ -21,14 +21,22 @@ export default function UploadPage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${API}/api/v1/datasets/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        `${API}/api/v1/datasets/upload?name=test&org_id=test`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await res.json();
+
+      // ✅ store FULL response (important)
       setUploadData(data);
-      localStorage.setItem("fairlens_upload", JSON.stringify(data));
+
+      // ✅ store dataset_id for future pages
+      localStorage.setItem("dataset_id", data.id);
+
     } catch (err) {
       alert("Upload failed");
     }
@@ -39,21 +47,27 @@ export default function UploadPage() {
   async function runBiasScan() {
     setScanLoading(true);
 
+    const columns = uploadData?.profile?.columns || [];
+    const targetCol = columns[columns.length - 1];
+    const sensitiveCol =
+      uploadData?.profile?.sensitive_columns?.[0] || columns[0];
+
     try {
-      const res = await fetch(`${API}/api/v1/bias/scan`, {
+      const res = await fetch(`${API}/api/v1/bias/bias/scan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          target_column: "approved",
-          sensitive_column: "gender",
+          target_column: targetCol,
+          sensitive_column: sensitiveCol,
           positive_value: 1,
         }),
       });
 
       const data = await res.json();
       setScanData(data);
+
       localStorage.setItem("fairlens_scan", JSON.stringify(data));
     } catch (err) {
       alert("Bias scan failed");
@@ -65,6 +79,7 @@ export default function UploadPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white px-6 py-10">
       <div className="max-w-5xl mx-auto">
+
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-5xl font-bold tracking-tight">FairLens</h1>
@@ -96,25 +111,50 @@ export default function UploadPage() {
           </div>
         </div>
 
+        {/* ✅ SHOW DATASET ID */}
+        {uploadData?.id && (
+          <div className="mt-6 bg-green-900/40 border border-green-700 p-4 rounded-xl">
+            <p className="text-green-300 font-semibold">
+              Dataset Uploaded Successfully ✅
+            </p>
+
+            <p className="text-green-400 text-sm mt-1">
+              Dataset ID: {uploadData.id}
+            </p>
+
+            <button
+              onClick={() =>
+                navigator.clipboard.writeText(uploadData.id)
+              }
+              className="mt-2 text-xs text-cyan-400"
+            >
+              Copy ID
+            </button>
+          </div>
+        )}
+
         {/* Dataset Summary */}
-        {uploadData && (
+        {uploadData?.profile && (
           <div className="mt-8">
             <h2 className="text-2xl font-semibold mb-4">Dataset Summary</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card title="Rows" value={uploadData.rows} />
-              <Card title="Columns" value={uploadData.num_columns} />
-              <Card title="Missing Values" value={uploadData.missing_values} />
+              <Card title="Rows" value={uploadData.profile.rows} />
+              <Card title="Columns" value={uploadData.profile.num_columns} />
+              <Card title="Missing Values" value={uploadData.profile.missing_values} />
               <Card
                 title="Sensitive Columns"
-                value={uploadData.sensitive_columns.length}
+                value={uploadData.profile.sensitive_columns.length}
               />
             </div>
 
             <div className="mt-5 bg-slate-900 rounded-2xl p-5 border border-slate-800">
-              <p className="text-slate-400 text-sm mb-2">Detected Sensitive Fields</p>
+              <p className="text-slate-400 text-sm mb-2">
+                Detected Sensitive Fields
+              </p>
+
               <div className="flex gap-2 flex-wrap">
-                {uploadData.sensitive_columns.map((col: string) => (
+                {uploadData.profile.sensitive_columns.map((col: string) => (
                   <span
                     key={col}
                     className="bg-purple-600/20 text-purple-300 px-3 py-1 rounded-full text-sm"
@@ -141,22 +181,22 @@ export default function UploadPage() {
             <h2 className="text-2xl font-semibold mb-4">Bias Results</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card
-                title="Male Approval"
-                value={scanData.approval_rates.Male}
-              />
-              <Card
-                title="Female Approval"
-                value={scanData.approval_rates.Female}
-              />
+              {Object.entries(scanData.approval_rates || {}).map(
+                ([key, val]: [string, any]) => (
+                  <Card key={key} title={`${key} Approval`} value={val} />
+                )
+              )}
+
               <Card
                 title="Parity Difference"
                 value={scanData.demographic_parity_diff}
               />
+
               <RiskCard value={scanData.risk_level} />
             </div>
           </div>
         )}
+
       </div>
     </main>
   );

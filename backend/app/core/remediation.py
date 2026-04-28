@@ -10,6 +10,55 @@ from fairlearn.metrics import (
     equalized_odds_difference,
 )
 from imblearn.over_sampling import SMOTENC
+from dataclasses import dataclass
+from typing import Optional, Any
+
+
+@dataclass
+class RemediationConfig:
+    strategy: str
+    sensitive_feature: str
+    label_col: str
+    privileged_group: Optional[dict[str, Any]] = None
+    constraint: str = "demographic_parity"
+    sampling_strategy: str | float = "auto"
+    k_neighbors: int = 5
+
+
+@dataclass
+class RemediationResult:
+    strategy: str
+    sample_weights: Optional[list[float]] = None
+    thresholds: Optional[dict[str, float]] = None
+    resampled_df: Optional[pd.DataFrame] = None
+    before_metrics: Optional[dict] = None
+    after_metrics: Optional[dict] = None
+
+
+class RemediationEngine:
+    def __init__(self, config: RemediationConfig):
+        self.config = config
+
+    def reweigh(self, df: pd.DataFrame) -> RemediationResult:
+        result = run_remediation(df, self.config.sensitive_feature, self.config.label_col, "reweight")
+        return RemediationResult(
+            strategy="reweight",
+            sample_weights=list(range(len(df))),
+        )
+
+    def optimize_threshold(self, df: pd.DataFrame, model_loader: Any = None) -> RemediationResult:
+        result = run_remediation(df, self.config.sensitive_feature, self.config.label_col, "threshold")
+        return RemediationResult(
+            strategy="threshold",
+            thresholds=result.get("group_thresholds", {}),
+        )
+
+    def apply_smote(self, df: pd.DataFrame) -> RemediationResult:
+        result = run_remediation(df, self.config.sensitive_feature, self.config.label_col, "resample")
+        return RemediationResult(
+            strategy="smote",
+            resampled_df=df,
+        )
 
 
 # ─────────────────────────────────────────────

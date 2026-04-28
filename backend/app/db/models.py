@@ -1,3 +1,5 @@
+#  schma file--
+
 import uuid
 from datetime import datetime
 
@@ -65,6 +67,7 @@ class Dataset(Base):
 
     org         = relationship("Org", back_populates="datasets")
     bias_runs   = relationship("BiasRun", back_populates="dataset")
+    counterfactual_results = relationship("CounterfactualResult", back_populates="dataset", lazy="selectin")
 
 
 # ── ML Models ─────────────────────────────────────────────────────────────────
@@ -84,6 +87,7 @@ class MLModel(Base):
     org       = relationship("Org", back_populates="models")
     bias_runs = relationship("BiasRun", back_populates="model")
     shap_runs = relationship("ShapRun", back_populates="model")
+    counterfactual_results = relationship("CounterfactualResult", back_populates="model", lazy="selectin")
 
 
 # ── Bias / Fairness ───────────────────────────────────────────────────────────
@@ -192,3 +196,36 @@ class BenchmarkEntry(Base):
     value      = Column(Float)
     percentile = Column(Float)
     updated_at = Column(DateTime, default=now_utc)
+
+
+# ── Counterfactual ────────────────────────────────────────────────────────────
+
+class CounterfactualResult(Base):
+    __tablename__ = "counterfactual_results"
+    __table_args__ = (
+        UniqueConstraint("model_id", "dataset_id", "row_index", "desired_outcome",
+                         name="uq_cf_model_dataset_row_outcome"),
+    )
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=new_uuid)
+    org_id = Column(UUID(as_uuid=False), ForeignKey("orgs.id"), nullable=False)
+    model_id = Column(UUID(as_uuid=False), ForeignKey("ml_models.id"), nullable=False)
+    dataset_id = Column(UUID(as_uuid=False), ForeignKey("datasets.id"), nullable=False)
+
+    row_index = Column(Integer, nullable=False)
+    desired_outcome = Column(Integer, nullable=False)
+    method = Column(String(32), nullable=False, default="greedy")
+
+    num_candidates = Column(Integer, nullable=False, default=0)
+    best_composite_score = Column(Float, nullable=True)
+    elapsed_seconds = Column(Float, nullable=True)
+
+    s3_result_key = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=now_utc)
+    updated_at = Column(DateTime, default=now_utc)
+
+    is_stale = Column(Boolean, default=False, nullable=False)
+
+    model = relationship("MLModel", back_populates="counterfactual_results", lazy="selectin")
+    dataset = relationship("Dataset", back_populates="counterfactual_results", lazy="selectin")
