@@ -23,6 +23,36 @@ app.add_middleware(
 def root():
     return {"message": "FairLens API running"}
 
+
+@app.post("/api/v1/datasets/upload", response_model=DatasetResponse)
+async def upload_dataset(name: str = "dataset", file: UploadFile = File(...)):
+    return await _upload_dataset(name, file)
+
+
+@app.get("/api/v1/datasets/{dataset_id}")
+def get_dataset(dataset_id: str):
+    df = _get_dataset(dataset_id)
+    return {
+        "id": dataset_id,
+        "name": "dataset",
+        "status": "loaded",
+        "profile": {
+            "rows": len(df),
+            "num_columns": len(df.columns),
+            "missing_values": int(df.isnull().sum().sum()),
+            "sensitive_columns": _detect_sensitive_columns(df),
+            "columns": list(df.columns),
+        },
+    }
+
+
+@app.get("/api/v1/datasets/{dataset_id}/rows/{row_index}")
+def get_dataset_row(dataset_id: str, row_index: int = 0):
+    df = _get_dataset(dataset_id)
+    if row_index >= len(df):
+        row_index = 0
+    return df.iloc[row_index].to_dict()
+
 @app.get("/health")
 def health():
     return {"status": "healthy"}

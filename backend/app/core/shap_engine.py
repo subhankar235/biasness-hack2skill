@@ -1,12 +1,38 @@
 import pandas as pd
 import numpy as np
 import shap
+import hashlib
+import joblib
+import os
 
+from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
 
-def run_shap_analysis(df: pd.DataFrame):
+MODELS_DIR = Path(__file__).parent.parent.parent / "models"
+MODELS_DIR.mkdir(exist_ok=True)
+
+
+def _get_data_seed(df: pd.DataFrame) -> int:
+    """Generate deterministic seed from data content."""
+    data_str = df.to_csv(index=False)
+    hash_obj = hashlib.sha256(data_str.encode())
+    return int(hash_obj.hexdigest()[:8], 16) % (2**31)
+
+
+def _get_model_path(dataset_name: str = None, df: pd.DataFrame = None) -> Path:
+    """Get model save path - uses data content hash if available."""
+    if df is not None:
+        data_hash = hashlib.sha256(df.to_csv(index=False).encode()).hexdigest()[:16]
+        return MODELS_DIR / f"shap_model_{data_hash}.joblib"
+    if dataset_name:
+        safe_name = "".join(c for c in dataset_name if c.isalnum()).lower()[:20]
+        return MODELS_DIR / f"shap_model_{safe_name}.joblib"
+    return MODELS_DIR / "shap_model_default.joblib"
+
+
+def run_shap_analysis(df: pd.DataFrame, dataset_name: str = None):
     """
     Production-grade SHAP explainability engine
     - Handles strings
@@ -14,6 +40,16 @@ def run_shap_analysis(df: pd.DataFrame):
     - Handles binary/multiclass targets
     - Returns stable JSON response
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    if df is None or df.empty:
+        return {
+            "top_features": [],
+            "bias_flags": ["Dataset is empty."]
+        }
+
+    logger.info(f"SHAP analysis input: {len(df)} rows, columns: {list(df.columns)}")
 
     if df is None or df.empty:
         return {
@@ -64,12 +100,15 @@ def run_shap_analysis(df: pd.DataFrame):
             "bias_flags": ["Target column needs 2+ classes."]
         }
 
+    # Always train fresh model for each dataset (no caching)
+    seed = _get_data_seed(df)
+    logger.info(f"Generated seed: {seed}")
+
     model = RandomForestClassifier(
         n_estimators=150,
         max_depth=6,
-        random_state=42
+        random_state=seed
     )
-
     model.fit(X, y)
 
     explainer = shap.TreeExplainer(model)
@@ -106,37 +145,80 @@ def run_shap_analysis(df: pd.DataFrame):
 
     top_features = results[:8]
 
+    raw_base = explainer.expected_value if hasattr(explainer, 'expected_value') else None
+    if raw_base is not None:
+        base_arr = np.array(raw_base)
+        if base_arr.ndim == 0:
+            base_value = float(base_arr)
+        elif base_arr.size > 0:
+            base_value = float(base_arr.flatten()[0])
+        else:
+            base_value = 0.0
+    else:
+        base_value = 0.0
+
+    local_explanations = []
+    for i in range(min(5, len(vals))):
+        row_shap = []
+        for feat, shap_val in zip(X.columns, vals[i]):
+            row_shap.append({
+                "feature": str(feat),
+                "value": round(float(shap_val), 4),
+                "positive": bool(shap_val > 0)
+            })
+        row_shap = sorted(row_shap, key=lambda x: abs(x["value"]), reverse=True)[:5]
+        local_explanations.append({
+            "row_index": i,
+            "contributions": row_shap,
+            "base_value": base_value,
+            "prediction": round(base_value + sum(vals[i]), 4)
+        })
+
     flags = []
+    total_importance = sum(item["importance"] for item in top_features)
 
     for item in top_features:
         name = item["feature"].lower()
+        imp_pct = (item["importance"] / total_importance * 100) if total_importance > 0 else 0
 
         if "gender" in name or "sex" in name:
-            flags.append(
-                "Gender-related feature has measurable impact."
-            )
+            flags.append({
+                "type": "gender",
+                "message": f"Gender shows {imp_pct:.1f}% feature influence, potential bias indicator",
+                "impact": round(imp_pct, 1)
+            })
 
         if "age" in name or "dob" in name:
-            flags.append(
-                "Age-related feature influences outcomes."
-            )
+            flags.append({
+                "type": "age",
+                "message": f"Age contributes {imp_pct:.1f}% to prediction, check for age bias",
+                "impact": round(imp_pct, 1)
+            })
 
         if "race" in name or "ethnicity" in name:
-            flags.append(
-                "Race / ethnicity signal detected."
-            )
+            flags.append({
+                "type": "race",
+                "message": f"Race/ethnicity shows {imp_pct:.1f}% impact, may indicate historical bias",
+                "impact": round(imp_pct, 1)
+            })
 
         if "religion" in name:
-            flags.append(
-                "Religion-related attribute detected."
-            )
+            flags.append({
+                "type": "religion",
+                "message": f"Religion feature detected with {imp_pct:.1f}% influence",
+                "impact": round(imp_pct, 1)
+            })
 
     if not flags:
-        flags.append(
-            "No dominant sensitive feature influence detected."
-        )
+        flags.append({
+            "type": "none",
+            "message": "No dominant sensitive feature influence detected.",
+            "impact": 0.0
+        })
 
     return {
         "top_features": top_features,
-        "bias_flags": list(set(flags))
+        "bias_flags": flags,
+        "local_explanations": local_explanations,
+        "base_value": base_value
     }

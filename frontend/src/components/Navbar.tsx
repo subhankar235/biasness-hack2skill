@@ -118,6 +118,7 @@ export default function Navbar() {
           <a
             href="http://127.0.0.1:8000/api/v1/report/pdf"
             target="_blank"
+            rel="noopener noreferrer"
             onClick={closeMenu}
             className="flex items-center gap-2 text-slate-300 hover:text-white transition"
           >
