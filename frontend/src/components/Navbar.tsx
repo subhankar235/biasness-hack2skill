@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Brain,
   FileText,
+  GitBranch,
 } from "lucide-react";
 
 import {
@@ -96,6 +97,13 @@ export default function Navbar() {
             href="/explainability"
             icon={<Brain size={16} />}
             label="Explainability"
+            onClick={closeMenu}
+          />
+
+          <NavItem
+            href="/counterfactual"
+            icon={<GitBranch size={16} />}
+            label="Counterfactual"
             onClick={closeMenu}
           />
 

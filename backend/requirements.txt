@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+aiosqlite
+pandas
+numpy
+joblib
+onnxruntime
+scikit-learn
+shap
+fairlearn
+imbalanced-learn
+celery
+PyJWT
+aiobotocore

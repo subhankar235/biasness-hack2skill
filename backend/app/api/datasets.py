@@ -1,18 +1,18 @@
+import uuid
 from fastapi import APIRouter, UploadFile, File
-import pandas as pd
-from io import StringIO
-from app.core.profiler import profile_dataframe
-from app.api.bias import set_dataframe
 
 router = APIRouter()
 
+
 @router.post("/upload")
-async def upload_dataset(file: UploadFile = File(...)):
+async def upload_dataset(
+    name: str = "test",
+    file: UploadFile = File(...),
+):
     content = await file.read()
-    df = pd.read_csv(StringIO(content.decode("utf-8")))
-
-    set_dataframe(df)
-
-    result = profile_dataframe(df)
-
-    return result
+    return {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "row_count": len(content),
+        "status": "uploaded",
+    }
