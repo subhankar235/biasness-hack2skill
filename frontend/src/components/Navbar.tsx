@@ -11,6 +11,7 @@ import {
   Brain,
   FileText,
   GitBranch,
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -105,6 +106,13 @@ export default function Navbar() {
             icon={<GitBranch size={16} />}
             label="Counterfactual"
             onClick={closeMenu}
+          />
+
+          <NavItem
+           href="/remediation"
+           icon={<Wrench size={16} />}
+           label="Remediation"
+           onClick={closeMenu}
           />
 
           <a

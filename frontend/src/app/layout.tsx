@@ -17,18 +17,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className="bg-slate-950 text-white">
-          <Navbar />
-          {children}
+          <Providers>
+            <Navbar />
+            {children}
+          </Providers>
         </body>
       </html>
     </ClerkProvider>
-    <html lang="en">
-      <body className="bg-slate-950 text-white">
-        <Providers>
-          <Navbar />
-          {children}
-        </Providers>
-      </body>
-    </html>
   );
 }

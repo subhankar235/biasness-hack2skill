@@ -49,6 +49,9 @@ export default function ExplainabilityPage() {
     setLoading(false);
   }
 
+  const topFeatures = data?.top_features || [];
+  const biasFlags = data?.bias_flags || [];
+
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -88,7 +91,7 @@ export default function ExplainabilityPage() {
 
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.top_features}>
+                    <BarChart data={topFeatures}>
                       <XAxis dataKey="feature" stroke="#94a3b8" />
                       <YAxis stroke="#94a3b8" />
                       <Tooltip />
@@ -104,15 +107,21 @@ export default function ExplainabilityPage() {
                 </h2>
 
                 <div className="space-y-4">
-                  {data.bias_flags.map(
-                    (item: string, i: number) => (
-                      <div
-                        key={i}
-                        className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300"
-                      >
-                        {item}
-                      </div>
+                  {biasFlags.length > 0 ? (
+                    biasFlags.map(
+                      (item: string, i: number) => (
+                        <div
+                          key={i}
+                          className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300"
+                        >
+                          {item}
+                        </div>
+                      )
                     )
+                  ) : (
+                    <div className="text-slate-400">
+                      No bias flags detected.
+                    </div>
                   )}
                 </div>
               </section>

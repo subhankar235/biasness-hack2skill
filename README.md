@@ -18,13 +18,22 @@ Most tools only tell you a model is biased.
 
 ---
 
-## Built MVP Features
+## Features
 
-- CSV / Dataset Upload
-- Fairness Metrics Dashboard
-- SHAP Explainability Insights
-- Bias Mitigation Recommendations
-- Exportable Audit Reports
+- No-code dataset upload (CSV / XLSX / TXT)
+- Instant bias scanning across demographic groups
+- Automatic sensitive column detection
+- Fairness metric summaries and risk scoring
+- Clean interactive analytics dashboard
+- SHAP-based model explainability
+- Feature importance visualization
+- Bias flag detection for risky attributes
+- Counterfactual what-if analysis
+- One-click remediation strategies
+- Downloadable PDF audit reports
+- Secure authentication with Clerk
+- Modern responsive UI built with Next.js
+- FastAPI backend with scalable API architecture
 
 ---
 
@@ -145,67 +154,6 @@ FairLens is a **full-stack fairness auditing system** that plugs into your exist
 |------|-----|
 | **PostgreSQL** | Stores audit logs, scan results, and historical fairness drift |
 | **SQLAlchemy** | ORM with async support for non-blocking DB operations |
-
-### 🧠 AI (LLM)
-| Tool | Why |
-|------|-----|
-| **Claude Sonnet (Anthropic)** | Converts raw SHAP/metric outputs into human-readable risk summaries and mitigation narratives. Also generates structured compliance reports via prompt-chaining. |
-
-### 🚀 DevOps
-| Tool | Why |
-|------|-----|
-| **Docker + Compose** | Reproducible local dev and deployment; isolates ML deps |
-| **GitHub Actions** | CI pipeline: linting, unit tests, fairness regression tests on PRs |
-
----
-
-## 🚀 Features
-
-### 🟢 Core Features (MVP)
-
-**📂 Dataset Bias Scanner**
-Ingests tabular datasets and runs automated demographic disparity analysis. Computes group-level distributions, label imbalance ratios, and flags features with high mutual information to protected attributes (proxy bias detection).
-
-**📐 Fairness Score Engine**
-Evaluates 6 fairness metrics in parallel and synthesizes a single **FairLens Score**. Each metric is weighted by domain context (e.g., equalized odds weighted higher in healthcare than lending).
-
-**🔬 Model Bias Checker**
-Accepts model predictions (CSV or live endpoint) and evaluates post-hoc fairness across demographic slices. Works with **any model** — XGBoost, neural nets, proprietary APIs — no retraining needed.
-
-**💬 Risk Explanation Engine**
-SHAP values are computed per protected group and fed to Claude Sonnet, which generates a 3-sentence natural language summary: *what the bias is, why it exists, and who it harms*. Output is calibrated for both technical and executive audiences.
-
-**📊 Fairness Dashboard**
-Interactive React dashboard with: radar chart (fairness metrics), demographic parity bar chart, SHAP waterfall plots, and a top-3 recommended fixes panel. Exportable to PDF in one click.
-
----
-
-### 🟡 Advanced Features
-
-**🔄 Counterfactual Simulation**
-"What would change this prediction?" — Users input a flagged individual's features and the system computes the **minimum feature change** needed to flip the model's output. Exposes discriminatory decision boundaries.
-
-**🔍 Root Cause Analyzer**
-Traces bias back to its origin: dataset collection, labeling process, feature engineering, or model architecture. Uses causal graph analysis (DoWhy) to distinguish *proxy bias* from *direct discrimination*.
-
-**🔧 Fix Recommendation Engine**
-Generates ranked mitigation strategies with estimated fairness gain and implementation cost. Provides ready-to-run Python code snippets for: reweighing, adversarial debiasing, threshold optimization, and calibrated equalization.
-
-**📄 Report Generator**
-One-click PDF audit report: executive summary, full metric breakdown, SHAP explanations, identified risk groups, and recommended remediations. Formatted for regulatory compliance (EEOC, ECOA, EU AI Act).
-
----
-
-### 🔴 Future / WOW Features
-
-**🤖 AI Fairness Agent**
-An autonomous Claude-powered agent that: monitors your model endpoint, detects bias drift in real time, drafts a mitigation PR, and pings your Slack channel — all without human intervention.
-
-**📈 Bias Drift Monitoring**
-Tracks fairness metrics over time as production data evolves. Fires alerts when scores degrade beyond configurable thresholds. Built for MLOps integration (MLflow, Weights & Biases).
-
-**🌐 Federated Audit Mode**
-Audit models without ever accessing raw data — FairLens computes fairness metrics locally on the data owner's infrastructure and returns only aggregated statistics.
 
 ---
 
@@ -346,48 +294,92 @@ Dataset Audit                  Model Prediction Audit
 
 ## 🛠️ Installation & Setup
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL 15+
+Installation & Setup
 
-### Quick Start
+1. Clone the Repository
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/subhankar235/biasness-hack2skill.git
+git clone https://github.com/subhankar235/biasness-hack2skill
 cd biasness-hack2skill
 
-# 2. Set environment variables
-cp .env.example .env
-# Add your ANTHROPIC_API_KEY to .env
+---
 
-# 3. Start all services with Docker
-docker-compose up --build
+2. Backend Setup (FastAPI)
 
-# --- OR run manually ---
-
-# Backend
 cd backend
+
+Windows
+
+venv\Scripts\activate
+
+macOS / Linux
+
+source venv/bin/activate
+
+Install Dependencies
+
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
 
-# Celery worker (separate terminal)
-celery -A app.worker worker --loglevel=info
+Run Backend Server
 
-# Frontend
+uvicorn app.main:app --reload
+
+Backend runs on:
+
+http://127.0.0.1:8000
+
+API Docs:
+
+http://127.0.0.1:8000/docs
+
+---
+
+3. Frontend Setup (Next.js)
+
+Open a new terminal:
+
 cd frontend
 npm install
+
+Run Frontend
+
 npm run dev
-```
+
+Frontend runs on:
+
+http://localhost:3000
+
+---
+
+4. Environment Variables
+
+Create a ".env.local" file inside "frontend/"
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_key_here
+CLERK_SECRET_KEY=your_secret_here
+
+Create a ".env" file inside "backend/" if required:
+
+DATABASE_URL=your_database_url
+SECRET_KEY=your_secret_key
+
+---
+
+5. Start Using FairLens
+
+1. Open "http://localhost:3000"
+2. Sign in
+3. Upload dataset
+4. Run bias scan
+5. View explainability insights
+6. Export PDF reports
+
+---
 
 ### Access
 | Service | URL |
 |---------|-----|
 | Frontend Dashboard | http://localhost:3000 |
 | API Docs (Swagger) | http://localhost:8000/docs |
-| Celery Monitor | http://localhost:5555 |
 
 ### Run Your First Audit
 
@@ -398,16 +390,6 @@ curl -X POST http://localhost:8000/api/v1/scan \
   -F "sensitive_columns=race,gender" \
   -F "domain=lending"
 ```
-
----
-
-
-
----
-
-## 📜 License
-
-MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
