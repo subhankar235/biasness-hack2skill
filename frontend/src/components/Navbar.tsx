@@ -11,7 +11,7 @@ import {
   Brain,
   FileText,
   GitBranch,
-  Wrench, // ✅ added better icon
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -108,15 +108,13 @@ export default function Navbar() {
             onClick={closeMenu}
           />
 
-          {/* ✅ NEW: Remediation Route */}
           <NavItem
-            href="/remediation"
-            icon={<Wrench size={16} />}
-            label="Remediation"
-            onClick={closeMenu}
+           href="/remediation"
+           icon={<Wrench size={16} />}
+           label="Remediation"
+           onClick={closeMenu}
           />
 
-          {/* PDF Report */}
           <a
             href="http://127.0.0.1:8000/api/v1/report/pdf"
             target="_blank"

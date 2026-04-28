@@ -55,6 +55,9 @@ export default function ExplainabilityPage() {
     setLoading(false);
   }
 
+  const topFeatures = data?.top_features || [];
+  const biasFlags = data?.bias_flags || [];
+
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -95,7 +98,7 @@ export default function ExplainabilityPage() {
 
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.top_features}>
+                    <BarChart data={topFeatures}>
                       <XAxis dataKey="feature" stroke="#94a3b8" />
                       <YAxis stroke="#94a3b8" />
                       <Tooltip />
@@ -112,28 +115,20 @@ export default function ExplainabilityPage() {
                 </h2>
 
                 <div className="space-y-4">
-                  {biasFlags.length > 0 && biasFlags[0].impact !== 0 ? biasFlags.map(
-                    (flag: any, i: number) => (
-                      <div
-                        key={i}
-                        className="bg-red-500/10 border border-red-500/30 rounded-xl p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-red-300 font-semibold">
-                            {flag.type?.toUpperCase() || "BIAS"}
-                          </span>
-                          <span className="text-red-400 font-bold">
-                            {flag.impact?.toFixed(1)}%
-                          </span>
+                  {biasFlags.length > 0 ? (
+                    biasFlags.map(
+                      (item: string, i: number) => (
+                        <div
+                          key={i}
+                          className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300"
+                        >
+                          {item}
                         </div>
-                        <p className="text-red-200 text-sm mt-2">
-                          {flag.message}
-                        </p>
-                      </div>
+                      )
                     )
                   ) : (
-                    <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-green-300">
-                      No significant bias detected in this dataset.
+                    <div className="text-slate-400">
+                      No bias flags detected.
                     </div>
                   )}
                 </div>
