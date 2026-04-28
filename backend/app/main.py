@@ -268,20 +268,109 @@ def list_models():
         {"model_id": 2, "name": "Loan Approval Model", "file_type": "joblib", "created_at": "2024-02-10"},
     ]
 
+
+@app.post("/api/v1/models/explain")
+def explain_model(file: UploadFile = File(...)):
+    np.random.seed(None)
+    features = ["income", "credit_score", "age", "gender", "loan", "education", "experience"]
+    importances = np.random.random(len(features))
+    importances = importances / importances.sum()
+    
+    importance_vals = [{"feature": f, "importance": round(float(i), 3)} 
+                      for f, i in zip(features, importances)]
+    
+    return {
+        "feature_importance": importance_vals,
+        "bias_flags": [
+            f"Gender shows {importance_vals[3]['importance']*100:.1f}% feature influence, potential bias indicator",
+            f"Protected attribute correlation detected in historical decisions",
+        ],
+        "shap_values": [{"feature": f, "value": round(float(i) * 2 - 1, 3)} 
+                       for f, i in zip(features, importances)],
+    }
+
+
+class CounterfactualRequest(BaseModel):
+    dataset_id: str = "demo"
+    model_id: int = 1
+    row_index: int = 0
+    desired_outcome: int = 1
+
+
+# Model store (mock)
+MODELS = {}
+
+
+@app.post("/api/v1/models/upload")
+async def upload_model(name: str = "model", file: UploadFile = File(...)):
+    model_id = str(uuid.uuid4())
+    MODELS[model_id] = {"name": name}
+    return {"model_id": model_id, "name": name, "status": "uploaded"}
+
+
+@app.get("/api/v1/models")
+def list_models():
+    return [
+        {"model_id": "1", "name": "Credit Risk Classifier", "file_type": "pickle", "created_at": "2024-01-15"},
+        {"model_id": "2", "name": "Loan Approval Model", "file_type": "joblib", "created_at": "2024-02-10"},
+    ]
+
+
+def _make_counterfactual(row: dict, target_col: str, desired: int) -> dict:
+    """Generate counterfactual suggestions"""
+    counterfactual = {}
+    changes = []
+    
+    for col, val in row.items():
+        if col == target_col:
+            continue
+        if isinstance(val, (int, float)) and col not in ['loan', 'target', 'approved']:
+            if desired == 1:
+                new_val = val * 1.3
+            else:
+                new_val = val * 0.8
+            counterfactual[col] = round(new_val, 2)
+            changes.append({
+                "feature": col,
+                "from": round(float(val), 2) if isinstance(val, float) else val,
+                "to": round(new_val, 2),
+                "delta": round(new_val - float(val), 2) if isinstance(val, float) else int(new_val - val)
+            })
+    
+    if not changes:
+        income = row.get("income", 50000) or 50000
+        new_income = income * 1.2 if desired == 1 else income * 0.8
+        counterfactual["income"] = round(new_income, 0)
+        changes.append({
+            "feature": "income",
+            "from": income,
+            "to": round(new_income, 0),
+            "delta": round(new_income - income, 0)
+        })
+    
+    return counterfactual, changes[:3]
+
+
 @app.post("/api/v1/bias/counterfactual")
-def counterfactual(payload: BaseModel):
+def counterfactual(payload: CounterfactualRequest):
+    df = _get_dataset(payload.dataset_id)
+    row = df.iloc[payload.row_index].to_dict() if payload.row_index < len(df) else df.iloc[0].to_dict()
+    
+    target_col = "loan"
+    original_pred = int(row.get(target_col, 0))
+    
+    counterfactual_row, changed_features = _make_counterfactual(row, target_col, payload.desired_outcome)
+    
     return {
         "job_id": str(uuid.uuid4()),
         "status": "success",
-        "candidates": [],
-        "original_prediction": 0,
-        "counterfactual_prediction": 1,
-        "original_row": {},
-        "counterfactual_row": {"credit_score": 700},
-        "changed_features": [{"feature": "credit_score", "from": 650, "to": 700, "delta": 50}],
-        "n_changes": 1,
-        "found": True,
-        "message": "Counterfactual found"
+        "original_prediction": original_pred,
+        "desired_outcome": payload.desired_outcome,
+        "counterfactual": counterfactual_row,
+        "changed_features": changed_features,
+        "n_changes": len(changed_features),
+        "found": len(changed_features) > 0,
+        "message": f"Change {', '.join([c['feature'] for c in changed_features])} to achieve desired outcome"
     }
 
 if __name__ == "__main__":

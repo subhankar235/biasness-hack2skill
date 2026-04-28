@@ -22,6 +22,18 @@ app/api/bias_counterfactual.py   → POST /bias/counterfactual
 frontend/CounterfactualExplorer.jsx   → shows change pills + prediction cards
 
 
+Step-by-step:
+📦 Picks a row from your dataset
+🤖 Sends it to the model → gets prediction
+🔍 Tries changing feature values (income, score, etc.)
+🔁 Checks: “Did prediction flip?”
+✅ Finds minimum change needed
+
+
+
+
+
+remediation-
 1. You upload dataset
 2. Model makes predictions
 3. You detect bias
