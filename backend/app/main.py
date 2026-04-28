@@ -270,24 +270,23 @@ def list_models():
 
 
 @app.post("/api/v1/models/explain")
-def explain_model(file: UploadFile = File(...)):
-    np.random.seed(None)
-    features = ["income", "credit_score", "age", "gender", "loan", "education", "experience"]
-    importances = np.random.random(len(features))
-    importances = importances / importances.sum()
-    
-    importance_vals = [{"feature": f, "importance": round(float(i), 3)} 
-                      for f, i in zip(features, importances)]
-    
-    return {
-        "feature_importance": importance_vals,
-        "bias_flags": [
-            f"Gender shows {importance_vals[3]['importance']*100:.1f}% feature influence, potential bias indicator",
-            f"Protected attribute correlation detected in historical decisions",
-        ],
-        "shap_values": [{"feature": f, "value": round(float(i) * 2 - 1, 3)} 
-                       for f, i in zip(features, importances)],
-    }
+async def explain_model(file: UploadFile = File(...)):
+    from app.core.shap_engine import run_shap_analysis
+    import io
+
+    content = await file.read()
+    df = pd.read_csv(io.BytesIO(content))
+
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            try:
+                df[col] = pd.to_numeric(df[col])
+            except:
+                pass
+
+    result = run_shap_analysis(df, dataset_name=file.filename)
+
+    return result
 
 
 class CounterfactualRequest(BaseModel):
